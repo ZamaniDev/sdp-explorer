@@ -1,0 +1,222 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h1>🔧 ME SDP MSP API Explorer</h1>
+<p style="color: #666; margin-bottom: 20px;">Base URL: https://support.pirasys.com/api/v3</p>
+
+<!-- Hidden data for JavaScript -->
+<script id="endpoints-data" type="application/json">{{ endpoints | tojson }}</script>
+
+<div class="tabs">
+    <div class="tab active" onclick="switchTab('connection')">Connection Test</div>
+    <div class="tab" onclick="switchTab('explorer')">API Explorer</div>
+    <div class="tab" onclick="switchTab('quick')">Quick Views</div>
+    <div class="tab" onclick="switchTab('history')">Request History</div>
+</div>
+
+<!-- Connection Test Tab -->
+<div id="connection" class="tab-content active">
+    <h2>Test API Connection</h2>
+    <p>Click the button to verify your API key works:</p>
+    <button class="btn btn-success" onclick="testConnection()">🔌 Test Connection</button>
+    <div id="connection-result" class="response-box" style="display: none;"></div>
+</div>
+
+<!-- API Explorer Tab -->
+<div id="explorer" class="tab-content">
+    <h2>API Endpoint Explorer</h2>
+    
+    <div class="grid">
+        <!-- Left Panel: Request Builder -->
+        <div>
+            <div class="form-group">
+                <label>Category:</label>
+                <select id="category" onchange="updateEndpoints()">
+                    <option value="">-- Select Category --</option>
+                    {% for category in endpoints.keys() %}
+                    <option value="{{ category }}">{{ category }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Endpoint:</label>
+                <select id="endpoint" onchange="updateInputMode()">
+                    <option value="">-- Select Category First --</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Method:</label>
+                <select id="method">
+                    <option value="GET">GET</option>
+                    <option value="POST">POST</option>
+                    <option value="PUT">PUT</option>
+                    <option value="DELETE">DELETE</option>
+                </select>
+            </div>
+            
+            <div id="placeholders-container"></div>
+            
+            <!-- Input Mode Switcher -->
+            <div class="form-group">
+                <label>Input Mode:</label>
+                <div class="button-group">
+                    <button class="btn-small active" onclick="setInputMode('form')" id="mode-form">📝 Form</button>
+                    <button class="btn-small" onclick="setInputMode('json')" id="mode-json">{ } JSON</button>
+                </div>
+            </div>
+            
+            <!-- Form Mode -->
+            <div id="input-form-mode">
+                <h3>List Options:</h3>
+                
+                <div class="form-group">
+                    <label>Row Count:</label>
+                    <input type="number" id="form-row-count" value="20" min="1" max="100">
+                </div>
+                
+                <div class="form-group">
+                    <label>Start Index:</label>
+                    <input type="number" id="form-start-index" value="1" min="1">
+                </div>
+                
+                <div class="form-group">
+                    <label>Sort Field:</label>
+                    <input type="text" id="form-sort-field" placeholder="e.g., created_time">
+                </div>
+                
+                <div class="form-group">
+                    <label>Sort Order:</label>
+                    <select id="form-sort-order">
+                        <option value="desc">Descending (Newest First)</option>
+                        <option value="asc">Ascending (Oldest First)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label style="display: flex; align-items: center;">
+                        <input type="checkbox" id="form-get-total" checked style="width: auto; margin-right: 10px;">
+                        Get Total Count
+                    </label>
+                </div>
+                
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h3 style="margin: 0;">Search Filters:</h3>
+                    <button type="button" class="btn-small" onclick="addSearchFilter()">+ Add Filter</button>
+                </div>
+                
+                <!-- Discovered Fields Section (Dynamic) -->
+                <div id="discovered-fields" style="display: none; margin-bottom: 15px;">
+                    <div style="background: #e7f3ff; padding: 12px; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <strong>🔍 Available Fields from Last Response:</strong>
+                            <span id="discovered-count" style="font-size: 12px; color: #666;"></span>
+                        </div>
+                        <div id="discovered-fields-chips" style="display: flex; flex-wrap: wrap; gap: 6px; max-height: 200px; overflow-y: auto;">
+                            <!-- Chips will be added here dynamically -->
+                        </div>
+                        <small style="color: #666; display: block; margin-top: 8px;">
+                            💡 Click any field to add it as a filter
+                        </small>
+                    </div>
+                </div>
+                
+                <div id="search-filters-container">
+                    <!-- Search filters will be added here dynamically -->
+                </div>
+                
+                <div id="no-response-hint" style="background: #fff3cd; padding: 12px; border-radius: 4px; font-size: 13px; margin-top: 10px;">
+                    ℹ️ Execute a query first to discover available fields for filtering
+                </div>
+            </div>
+            
+            <!-- JSON Mode -->
+            <div id="input-json-mode" style="display: none;">
+                <div class="form-group">
+                    <label>Input Data (JSON):</label>
+                    <textarea id="input-data" placeholder='{"list_info": {"row_count": 10}}'></textarea>
+                </div>
+            </div>
+            
+            <button class="btn" onclick="executeApiCall()">🚀 Execute</button>
+        </div>
+        
+        <!-- Right Panel: Response -->
+        <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3>Response:</h3>
+                <div class="button-group">
+                    <button class="btn-small active" onclick="setViewMode('smart')" id="view-smart">📋 Smart View</button>
+                    <button class="btn-small" onclick="setViewMode('json')" id="view-json">{ } JSON</button>
+                </div>
+            </div>
+            
+            <!-- Search in results -->
+            <div id="result-search" style="display: none; margin-bottom: 10px;">
+                <input type="text" id="search-in-results" placeholder="🔍 Search in results..." 
+                       oninput="filterResults(this.value)" style="width: 100%;">
+            </div>
+            
+            <!-- Smart View -->
+            <div id="response-smart-view" class="response-box">
+                <p style="color: #999;">Execute an API call to see the response here</p>
+            </div>
+            
+            <!-- JSON View -->
+            <div id="response-json-view" class="response-box" style="display: none;">
+                <pre id="response-json-content"></pre>
+            </div>
+            
+            <!-- Pagination Controls -->
+            <div id="pagination-controls" style="display: none; margin-top: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <button class="btn" onclick="previousPage()" id="btn-prev">← Previous</button>
+                    <span id="pagination-info">Page 1 of ?</span>
+                    <button class="btn" onclick="nextPage()" id="btn-next">Next →</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Views Tab -->
+<div id="quick" class="tab-content">
+    <h2>Quick Views</h2>
+    <button class="btn" onclick="quickView('requests')">📋 Recent Requests</button>
+    <button class="btn" onclick="quickView('technicians')">👥 All Technicians</button>
+    
+    <div style="display: flex; justify-content: space-between; margin-top: 15px;">
+        <input type="text" id="quick-search" placeholder="🔍 Search in results..." 
+               oninput="filterQuickResults(this.value)" style="flex: 1; margin-right: 10px;">
+        <div class="button-group">
+            <button class="btn-small active" onclick="setQuickViewMode('smart')" id="quick-view-smart">📋 Smart View</button>
+            <button class="btn-small" onclick="setQuickViewMode('json')" id="quick-view-json">{ } JSON</button>
+        </div>
+    </div>
+    
+    <div id="quick-result" class="response-box" style="margin-top: 15px;"></div>
+</div>
+
+<!-- History Tab -->
+<div id="history" class="tab-content">
+    <h2>Request History</h2>
+    <button class="btn" onclick="loadHistory()">🔄 Refresh</button>
+    <div id="history-list" style="margin-top: 15px;"></div>
+</div>
+
+<!-- Modal for Full Details -->
+<div id="detail-modal" class="modal" onclick="closeModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3 id="modal-title">Details</h3>
+            <span class="modal-close" onclick="closeModal()">&times;</span>
+        </div>
+        <div class="modal-body" id="modal-body"></div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='explorer.js') }}"></script>
+{% endblock %}
