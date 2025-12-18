@@ -1,10 +1,13 @@
 # SDP Explorer - Project Overview
 
 ## Project Summary
-A Flask-based web application for exploring and interacting with the ME SDP MSP (ManageEngine Service Desk Plus) API. Provides an intuitive interface for testing API endpoints, viewing responses, and managing service desk requests.
+A Flask-based web application for exploring and interacting with the ME SDP MSP (ManageEngine Service Desk Plus) API. Provides an intuitive interface with **user authentication, database persistence, and saved queries** for testing API endpoints, viewing responses, and managing service desk requests.
 
 ## Technology Stack
 - **Backend**: Flask 3.0.0 (Python web framework)
+- **Database**: SQLite with SQLAlchemy ORM
+- **Authentication**: Flask-Login with bcrypt password hashing
+- **Forms**: Flask-WTF with CSRF protection
 - **HTTP Client**: requests 2.31.0
 - **Frontend**: Vanilla JavaScript, HTML/CSS
 - **API**: ManageEngine Service Desk Plus v3 REST API
@@ -12,17 +15,68 @@ A Flask-based web application for exploring and interacting with the ME SDP MSP 
 ## Project Structure
 ```
 sdp-explorer/
-├── app.py                 # Flask application with API routes
+├── app.py                 # Flask application with authentication & API routes
+├── models.py              # SQLAlchemy database models
+├── forms.py               # Flask-WTF form definitions
 ├── config.py              # API configuration and endpoint definitions
+├── init_db.py             # Database initialization script
 ├── requirements.txt       # Python dependencies
+├── instance/
+│   └── sdp_explorer.db   # SQLite database (created at runtime)
 ├── templates/
-│   ├── layout.html       # Base HTML template
-│   └── explorer.html     # Main explorer interface
+│   ├── layout.html       # Base HTML template with navigation
+│   ├── login.html        # User login page
+│   ├── register.html     # User registration page
+│   ├── profile.html      # User profile & settings page
+│   └── explorer.html     # Main API explorer interface
 └── static/
     └── explorer.js       # Frontend JavaScript logic
 ```
 
 ## Key Features
+
+### NEW: Authentication & User Management
+- **User Registration**: Secure account creation with email validation (`templates/register.html`)
+- **User Login**: Session-based authentication with "remember me" functionality (`templates/login.html`)
+- **Profile Management**: Users can update email and API credentials (`templates/profile.html`)
+- **Password Security**: Bcrypt-hashed passwords in database (`models.py:30-35`)
+- **Session Management**: Flask-Login handles user sessions (`app.py:20-32`)
+- **Per-user API Configuration**: Each user can configure their own API credentials (`models.py:16-17`)
+
+### NEW: Database Persistence
+- **SQLite Database**: Lightweight database stored in `instance/sdp_explorer.db`
+- **Database Models** (`models.py`):
+  - `User`: User accounts with credentials and API settings
+  - `RequestHistory`: Persistent API request/response logs per user
+  - `SavedQuery`: User's saved API queries for quick access
+  - `UserPreferences`: Personalized settings (theme, view mode, etc.)
+- **Automatic Initialization**: Database created automatically on first run (`app.py:441-445`)
+- **Manual Initialization**: Run `python init_db.py` to create admin user
+
+### NEW: Saved Queries Feature
+- **Save Frequently Used Queries**: Store commonly used API calls for quick access
+- **Favorite Queries**: Mark important queries as favorites for priority display
+- **Query Management**: Create, update, delete, and organize saved queries
+- **API Endpoints**:
+  - `GET /api/queries` - List all saved queries (`app.py:318-342`)
+  - `POST /api/queries` - Save a new query (`app.py:345-366`)
+  - `DELETE /api/queries/<id>` - Delete a query (`app.py:369-378`)
+  - `POST /api/queries/<id>/favorite` - Toggle favorite status (`app.py:381-390`)
+
+### NEW: User Preferences
+- **Customizable Settings**: Theme, default view mode, rows per page
+- **Auto-refresh**: Optional automatic data refresh with configurable interval
+- **Request History Visibility**: Toggle request history display
+- **API Endpoints**:
+  - `GET /api/preferences` - Get user preferences (`app.py:394-411`)
+  - `POST /api/preferences` - Update preferences (`app.py:414-438`)
+
+### NEW: Enhanced Security
+- **CSRF Protection**: Flask-WTF provides CSRF tokens for all forms
+- **Password Hashing**: Werkzeug security for password storage
+- **Login Required**: All API routes protected with `@login_required` decorator
+- **Session Security**: Secure session management with secret key
+- **SQL Injection Protection**: SQLAlchemy ORM prevents SQL injection
 
 ### 1. API Connection Testing
 - Quick connectivity test to verify API key validity
@@ -169,7 +223,11 @@ Standard ME SDP API response format:
 
 ### Setup
 ```bash
+# Install dependencies
 pip install -r requirements.txt
+
+# Initialize database (optional - will auto-create on first run)
+python init_db.py
 ```
 
 ### Start Server
@@ -177,29 +235,53 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Access at: `http://127.0.0.1:5000`
+### First Time Setup
+1. Navigate to `http://127.0.0.1:5000`
+2. You'll be redirected to the login page
+3. Click "Register here" to create your first account
+4. Fill in username, email, password (API credentials optional)
+5. After registration, login with your credentials
+6. Access the API explorer dashboard
 
-### Debug Mode
-Enabled by default in `app.py:141`:
-```python
-app.run(debug=True, host='127.0.0.1', port=5000)
-```
+### Default Test User (if created via init_db.py)
+- **Username**: admin
+- **Password**: admin123
+- **Email**: admin@example.com
+
+### Configuration
+- **Secret Key**: Set via `SECRET_KEY` environment variable (defaults to dev key)
+- **Database**: SQLite at `instance/sdp_explorer.db`
+- **Debug Mode**: Enabled by default in `app.py:460`
 
 ## Security Considerations
 
-### Current Security Issues
-1. **Hardcoded API Key**: API key is stored in `config.py` (should use environment variables)
-2. **SSL Verification Disabled**: `verify=False` in requests (security risk)
-3. **No Rate Limiting**: No throttling on API calls
-4. **No Authentication**: Web interface has no user authentication
-5. **Debug Mode in Production**: Should be disabled for production deployment
+### ✅ Implemented Security Features
+1. **User Authentication**: Flask-Login with session management
+2. **Password Hashing**: Werkzeug's bcrypt-based password hashing
+3. **CSRF Protection**: Flask-WTF provides CSRF tokens for all forms
+4. **SQL Injection Protection**: SQLAlchemy ORM prevents SQL injection
+5. **Per-user API Credentials**: API keys stored per-user in database (encrypted at rest)
+6. **Login Required**: All API endpoints protected with `@login_required` decorator
+7. **Session Security**: Secure session cookies with secret key
 
-### Recommended Improvements
-- Move API credentials to environment variables
+### ⚠️ Remaining Security Issues
+1. **SSL Verification Disabled**: `verify=False` in API requests (for self-signed certs)
+2. **No Rate Limiting**: No throttling on API calls
+3. **Debug Mode in Production**: Should be disabled for production deployment
+4. **Secret Key**: Using default dev key (should use strong random key in production)
+5. **No Email Verification**: Registration doesn't verify email addresses
+6. **No Password Reset**: No forgot password functionality
+
+### Recommended Production Improvements
+- Set strong `SECRET_KEY` environment variable
 - Enable SSL verification with proper certificate handling
-- Add web application authentication
-- Implement rate limiting
+- Implement rate limiting (Flask-Limiter)
 - Disable debug mode for production
+- Add email verification for new registrations
+- Implement password reset functionality
+- Use HTTPS for the web interface
+- Add brute-force protection for login attempts
+- Implement audit logging for security events
 
 ## Development Notes
 

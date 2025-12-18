@@ -1,0 +1,55 @@
+{% extends "layout.html" %}
+
+{% block title %}Login - SDP Explorer{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1>SDP Explorer</h1>
+            <p style="color: #666; margin-top: 10px;">Sign in to your account</p>
+        </div>
+
+        <form method="POST" action="">
+            {{ form.hidden_tag() }}
+
+            <div class="form-group">
+                {{ form.username.label }}
+                {{ form.username(class="form-control", placeholder="Enter your username") }}
+                {% if form.username.errors %}
+                    <ul class="error-list">
+                        {% for error in form.username.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                {{ form.password.label }}
+                {{ form.password(class="form-control", placeholder="Enter your password") }}
+                {% if form.password.errors %}
+                    <ul class="error-list">
+                        {% for error in form.password.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+
+            <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+                {{ form.remember_me(class="form-check-input") }}
+                {{ form.remember_me.label(style="font-weight: normal; margin: 0;") }}
+            </div>
+
+            <div class="form-group" style="margin-top: 25px;">
+                {{ form.submit(class="btn", style="width: 100%;") }}
+            </div>
+        </form>
+
+        <div class="auth-link">
+            Don't have an account? <a href="{{ url_for('register') }}">Register here</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
