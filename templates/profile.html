@@ -1,0 +1,96 @@
+{% extends "layout.html" %}
+
+{% block title %}Profile - SDP Explorer{% endblock %}
+
+{% block content %}
+<h1>User Profile</h1>
+<p style="color: #666; margin-bottom: 30px;">Manage your account settings and API configuration</p>
+
+<div style="max-width: 600px;">
+    <div class="card">
+        <div class="card-header">
+            <h3 style="margin: 0;">Account Information</h3>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="">
+                {{ form.hidden_tag() }}
+
+                <div class="form-group">
+                    <label><strong>Username:</strong> {{ current_user.username }}</label>
+                </div>
+
+                <div class="form-group">
+                    {{ form.email.label }}
+                    {{ form.email(class="form-control") }}
+                    {% if form.email.errors %}
+                        <ul class="error-list">
+                            {% for error in form.email.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+
+                <hr>
+
+                <h4 style="margin-top: 20px; margin-bottom: 15px;">API Configuration</h4>
+                <p style="color: #666; font-size: 13px; margin-bottom: 15px;">
+                    Configure your personal API credentials. Leave blank to use system defaults.
+                </p>
+
+                <div class="form-group">
+                    {{ form.api_base_url.label }}
+                    {{ form.api_base_url(class="form-control", placeholder="https://your-server.com/api/v3") }}
+                    {% if form.api_base_url.errors %}
+                        <ul class="error-list">
+                            {% for error in form.api_base_url.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    {{ form.api_key.label }}
+                    {{ form.api_key(class="form-control", placeholder="Your API authentication token") }}
+                    {% if form.api_key.errors %}
+                        <ul class="error-list">
+                            {% for error in form.api_key.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+
+                <div class="form-group" style="margin-top: 25px;">
+                    {{ form.submit(class="btn") }}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 20px;">
+        <div class="card-header">
+            <h3 style="margin: 0;">Account Statistics</h3>
+        </div>
+        <div class="card-body">
+            <div class="preview-grid">
+                <div class="preview-field">
+                    <span class="field-label">Member Since:</span>
+                    <span class="field-value">{{ current_user.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                </div>
+                <div class="preview-field">
+                    <span class="field-label">Last Login:</span>
+                    <span class="field-value">
+                        {% if current_user.last_login %}
+                            {{ current_user.last_login.strftime('%Y-%m-%d %H:%M') }}
+                        {% else %}
+                            Never
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

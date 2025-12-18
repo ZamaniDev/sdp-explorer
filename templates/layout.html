@@ -713,11 +713,142 @@
             margin-top: 8px;
             margin-bottom: 4px;
         }
+
+        /* Navigation */
+        .navbar {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar-brand {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .navbar-menu {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .navbar-menu a {
+            color: #333;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .navbar-menu a:hover {
+            color: #007bff;
+        }
+
+        .user-info {
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* Flash Messages */
+        .alert {
+            padding: 12px 20px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+
+        /* Auth forms */
+        .auth-container {
+            max-width: 500px;
+            margin: 50px auto;
+        }
+
+        .auth-card {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .auth-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        .auth-link a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .auth-link a:hover {
+            text-decoration: underline;
+        }
+
+        .error-list {
+            color: #dc3545;
+            font-size: 13px;
+            margin-top: 5px;
+            list-style: none;
+        }
     </style>
 </head>
 
 <body>
     <div class="container">
+        {% if current_user.is_authenticated %}
+        <nav class="navbar">
+            <a href="{{ url_for('index') }}" class="navbar-brand">SDP Explorer</a>
+            <div class="navbar-menu">
+                <span class="user-info">{{ current_user.username }}</span>
+                <a href="{{ url_for('profile') }}">Profile</a>
+                <a href="{{ url_for('logout') }}">Logout</a>
+            </div>
+        </nav>
+        {% endif %}
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
         {% block content %}{% endblock %}
     </div>
 </body>
