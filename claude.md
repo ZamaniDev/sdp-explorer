@@ -331,6 +331,17 @@ Global JavaScript state variables (`static/explorer.js:3-14`):
 - **POST** `/reports/{report_id}/execute` - Execute report
 - **POST** `/reports/execute_query` - Execute custom query
 
+### Accounts
+- **GET** `/accounts` - List all accounts
+- **GET** `/accounts/{account_id}` - View specific account
+- **POST** `/accounts` - Create new account (Admin only)
+- **PUT** `/accounts/{account_id}` - Update account (Admin only)
+- **DELETE** `/accounts/{account_id}` - Delete account (Admin only)
+- **GET** `/accounts/{account_id}/contacts` - List account contacts
+- **GET** `/accounts/{account_id}/sites` - List account sites
+
+For detailed Accounts API documentation, see `docs/ACCOUNTS_API.md`
+
 ## Future Enhancement Ideas
 - User authentication system
 - Saved queries/favorites
