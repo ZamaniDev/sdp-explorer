@@ -32,5 +32,15 @@ ENDPOINTS = {
         "list": "/reports",
         "execute": "/reports/{report_id}/execute",
         "execute_query": "/reports/execute_query",
+    },
+    "Accounts": {
+        "list": "/accounts",
+        "view": "/accounts/{account_id}",
+        "add": "/accounts",
+        "update": "/accounts/{account_id}",
+        "delete": "/accounts/{account_id}",
+        "search": "/accounts",
+        "contacts": "/accounts/{account_id}/contacts",
+        "sites": "/accounts/{account_id}/sites",
     }
 }
