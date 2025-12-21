@@ -438,6 +438,10 @@ def update_preferences():
     return jsonify({'success': True})
 
 
+# Import site matrix routes
+import site_matrix_routes
+
+
 def init_db():
     """Initialize database"""
     with app.app_context():
