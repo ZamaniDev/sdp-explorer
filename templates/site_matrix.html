@@ -1,0 +1,738 @@
+{% extends "layout.html" %}
+
+{% block title %}Technician-Site Matrix - SDP Explorer{% endblock %}
+
+{% block content %}
+<style>
+    .matrix-container {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .matrix-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #e9ecef;
+    }
+
+    .matrix-title {
+        margin: 0;
+        color: #333;
+        font-size: 1.8em;
+    }
+
+    .matrix-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .search-box {
+        padding: 8px 15px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        width: 250px;
+        font-size: 14px;
+    }
+
+    .search-box:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+    }
+
+    .matrix-stats {
+        display: flex;
+        gap: 30px;
+        margin-bottom: 20px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 6px;
+    }
+
+    .stat-item {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .stat-label {
+        font-size: 12px;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+        font-size: 24px;
+        font-weight: bold;
+        color: #007bff;
+    }
+
+    .matrix-table-wrapper {
+        overflow-x: auto;
+        max-height: 70vh;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+    }
+
+    .matrix-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 13px;
+    }
+
+    .matrix-table thead th {
+        position: sticky;
+        top: 0;
+        background: #343a40;
+        color: white;
+        padding: 12px 8px;
+        text-align: left;
+        font-weight: 600;
+        z-index: 10;
+        border-bottom: 2px solid #23272b;
+    }
+
+    .matrix-table thead th.site-column {
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        padding: 8px 4px;
+        min-width: 40px;
+        max-width: 40px;
+        text-align: center;
+    }
+
+    .matrix-table tbody tr {
+        transition: background 0.2s;
+    }
+
+    .matrix-table tbody tr:hover {
+        background: #f8f9fa;
+    }
+
+    .matrix-table tbody tr.modified {
+        background: #fff3cd;
+    }
+
+    .matrix-table tbody td {
+        padding: 10px 8px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .tech-info {
+        display: flex;
+        flex-direction: column;
+        min-width: 200px;
+        position: sticky;
+        left: 0;
+        background: white;
+        z-index: 5;
+    }
+
+    .tech-name {
+        font-weight: 600;
+        color: #333;
+    }
+
+    .tech-email {
+        font-size: 11px;
+        color: #666;
+    }
+
+    .tech-meta {
+        font-size: 11px;
+        color: #999;
+        margin-top: 2px;
+    }
+
+    .site-checkbox {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 40px;
+        max-width: 40px;
+        text-align: center;
+    }
+
+    .site-checkbox input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+
+    .site-checkbox input[type="checkbox"]:checked {
+        accent-color: #28a745;
+    }
+
+    .site-checkbox input[type="checkbox"].modified {
+        accent-color: #ffc107;
+    }
+
+    .actions-column {
+        position: sticky;
+        right: 0;
+        background: white;
+        text-align: center;
+        min-width: 100px;
+    }
+
+    .btn-save-row {
+        padding: 4px 12px;
+        background: #28a745;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    .btn-save-row:hover {
+        background: #218838;
+    }
+
+    tr.modified .btn-save-row {
+        opacity: 1;
+    }
+
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+
+    .loading-overlay.active {
+        display: flex;
+    }
+
+    .loading-spinner {
+        background: white;
+        padding: 30px 50px;
+        border-radius: 8px;
+        text-align: center;
+    }
+
+    .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #007bff;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 15px;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        z-index: 10000;
+        opacity: 0;
+        transform: translateY(-20px);
+        transition: all 0.3s;
+    }
+
+    .notification.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .notification.success {
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+    }
+
+    .notification.error {
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+    }
+
+    .filter-controls {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+    }
+
+    .filter-btn {
+        padding: 6px 12px;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 13px;
+        transition: all 0.2s;
+    }
+
+    .filter-btn:hover {
+        background: #f8f9fa;
+    }
+
+    .filter-btn.active {
+        background: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+
+    .bulk-actions {
+        display: none;
+        padding: 15px;
+        background: #e7f3ff;
+        border: 1px solid #b3d9ff;
+        border-radius: 6px;
+        margin-bottom: 15px;
+    }
+
+    .bulk-actions.show {
+        display: block;
+    }
+
+    .changes-summary {
+        margin-top: 10px;
+        padding: 10px;
+        background: white;
+        border-radius: 4px;
+        font-size: 13px;
+    }
+</style>
+
+<div class="matrix-container">
+    <div class="matrix-header">
+        <h1 class="matrix-title">Technician-Site Matrix</h1>
+        <div class="matrix-actions">
+            <input type="text" id="searchBox" class="search-box" placeholder="Search technicians...">
+            <button class="btn" id="saveAllBtn" style="display: none;">Save All Changes</button>
+            <button class="btn btn-success" id="refreshBtn">Refresh</button>
+        </div>
+    </div>
+
+    <div class="matrix-stats">
+        <div class="stat-item">
+            <span class="stat-label">Technicians</span>
+            <span class="stat-value" id="totalTechs">-</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Sites</span>
+            <span class="stat-value" id="totalSites">-</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Modified</span>
+            <span class="stat-value" id="modifiedCount">0</span>
+        </div>
+    </div>
+
+    <div class="filter-controls">
+        <button class="filter-btn active" data-filter="all">All Technicians</button>
+        <button class="filter-btn" data-filter="active">Active Only</button>
+        <button class="filter-btn" data-filter="modified">Modified Only</button>
+    </div>
+
+    <div class="bulk-actions" id="bulkActions">
+        <h4 style="margin-top: 0;">Pending Changes</h4>
+        <div class="changes-summary" id="changesSummary"></div>
+        <div style="margin-top: 10px;">
+            <button class="btn btn-success" id="saveAllChanges">Save All</button>
+            <button class="btn" id="cancelAllChanges">Cancel All</button>
+        </div>
+    </div>
+
+    <div class="matrix-table-wrapper">
+        <table class="matrix-table" id="matrixTable">
+            <thead>
+                <tr id="tableHeader">
+                    <th class="tech-column">Technician</th>
+                    <!-- Site columns will be added dynamically -->
+                    <th class="actions-column">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <tr>
+                    <td colspan="100" style="text-align: center; padding: 40px;">
+                        <div class="spinner"></div>
+                        <div>Loading data...</div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner">
+        <div class="spinner"></div>
+        <div>Processing...</div>
+    </div>
+</div>
+
+<div class="notification" id="notification"></div>
+
+<script>
+let matrixData = {
+    technicians: [],
+    sites: [],
+    originalState: {}, // Track original state for each technician
+    modifiedState: {}  // Track modifications
+};
+
+// Load matrix data
+async function loadMatrixData() {
+    try {
+        const response = await fetch('/api/tools/site-matrix/data');
+        const data = await response.json();
+
+        if (!data.success) {
+            showNotification(data.error || 'Failed to load data', 'error');
+            return;
+        }
+
+        matrixData.technicians = data.technicians;
+        matrixData.sites = data.sites;
+
+        // Store original state
+        data.technicians.forEach(tech => {
+            matrixData.originalState[tech.id] = [...tech.associated_site_ids];
+        });
+
+        // Update stats
+        document.getElementById('totalTechs').textContent = data.total_technicians;
+        document.getElementById('totalSites').textContent = data.total_sites;
+
+        // Render matrix
+        renderMatrix();
+
+    } catch (error) {
+        showNotification('Error loading data: ' + error.message, 'error');
+    }
+}
+
+// Render the matrix table
+function renderMatrix() {
+    const header = document.getElementById('tableHeader');
+    const tbody = document.getElementById('tableBody');
+
+    // Clear existing content
+    header.innerHTML = '<th class="tech-column">Technician</th>';
+    tbody.innerHTML = '';
+
+    // Add site columns to header
+    matrixData.sites.forEach(site => {
+        const th = document.createElement('th');
+        th.className = 'site-column';
+        th.title = site.name + (site.account ? ` (${site.account})` : '');
+        th.textContent = site.name;
+        header.appendChild(th);
+    });
+
+    // Add actions column
+    header.innerHTML += '<th class="actions-column">Actions</th>';
+
+    // Add technician rows
+    matrixData.technicians.forEach(tech => {
+        const tr = document.createElement('tr');
+        tr.dataset.techId = tech.id;
+
+        // Technician info cell
+        const techCell = document.createElement('td');
+        techCell.className = 'tech-info';
+        techCell.innerHTML = `
+            <span class="tech-name">${tech.name}</span>
+            <span class="tech-email">${tech.email}</span>
+            <span class="tech-meta">${tech.department || ''} • ${tech.status}</span>
+        `;
+        tr.appendChild(techCell);
+
+        // Site checkbox cells
+        const currentSites = matrixData.modifiedState[tech.id] || matrixData.originalState[tech.id] || [];
+
+        matrixData.sites.forEach(site => {
+            const siteCell = document.createElement('td');
+            siteCell.className = 'site-checkbox';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.dataset.siteId = site.id;
+            checkbox.checked = currentSites.includes(site.id);
+            checkbox.onchange = () => handleCheckboxChange(tech.id, site.id, checkbox.checked);
+
+            siteCell.appendChild(checkbox);
+            tr.appendChild(siteCell);
+        });
+
+        // Actions cell
+        const actionsCell = document.createElement('td');
+        actionsCell.className = 'actions-column';
+        actionsCell.innerHTML = `
+            <button class="btn-save-row" onclick="saveRow(${tech.id})">Save</button>
+        `;
+        tr.appendChild(actionsCell);
+
+        tbody.appendChild(tr);
+    });
+}
+
+// Handle checkbox change
+function handleCheckboxChange(techId, siteId, isChecked) {
+    // Initialize modified state if doesn't exist
+    if (!matrixData.modifiedState[techId]) {
+        matrixData.modifiedState[techId] = [...(matrixData.originalState[techId] || [])];
+    }
+
+    // Update modified state
+    if (isChecked) {
+        if (!matrixData.modifiedState[techId].includes(siteId)) {
+            matrixData.modifiedState[techId].push(siteId);
+        }
+    } else {
+        matrixData.modifiedState[techId] = matrixData.modifiedState[techId].filter(id => id !== siteId);
+    }
+
+    // Check if modified
+    const isModified = JSON.stringify(matrixData.modifiedState[techId]) !==
+                       JSON.stringify(matrixData.originalState[techId]);
+
+    // Update row styling
+    const row = document.querySelector(`tr[data-tech-id="${techId}"]`);
+    if (isModified) {
+        row.classList.add('modified');
+    } else {
+        row.classList.remove('modified');
+        delete matrixData.modifiedState[techId];
+    }
+
+    updateModifiedCount();
+}
+
+// Update modified count
+function updateModifiedCount() {
+    const count = Object.keys(matrixData.modifiedState).length;
+    document.getElementById('modifiedCount').textContent = count;
+    document.getElementById('saveAllBtn').style.display = count > 0 ? 'block' : 'none';
+
+    if (count > 0) {
+        document.getElementById('bulkActions').classList.add('show');
+        updateChangesSummary();
+    } else {
+        document.getElementById('bulkActions').classList.remove('show');
+    }
+}
+
+// Update changes summary
+function updateChangesSummary() {
+    const summary = document.getElementById('changesSummary');
+    let html = '<ul style="margin: 0; padding-left: 20px;">';
+
+    Object.keys(matrixData.modifiedState).forEach(techId => {
+        const tech = matrixData.technicians.find(t => t.id == techId);
+        const originalCount = matrixData.originalState[techId]?.length || 0;
+        const newCount = matrixData.modifiedState[techId]?.length || 0;
+
+        html += `<li><strong>${tech.name}</strong>: ${originalCount} → ${newCount} sites</li>`;
+    });
+
+    html += '</ul>';
+    summary.innerHTML = html;
+}
+
+// Save individual row
+async function saveRow(techId) {
+    const siteIds = matrixData.modifiedState[techId];
+
+    if (!siteIds) {
+        showNotification('No changes to save', 'error');
+        return;
+    }
+
+    showLoading(true);
+
+    try {
+        const response = await fetch('/api/tools/site-matrix/update', {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                technician_id: techId,
+                site_ids: siteIds
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // Update original state
+            matrixData.originalState[techId] = [...siteIds];
+            delete matrixData.modifiedState[techId];
+
+            // Remove modified styling
+            const row = document.querySelector(`tr[data-tech-id="${techId}"]`);
+            row.classList.remove('modified');
+
+            updateModifiedCount();
+            showNotification('Saved successfully!', 'success');
+        } else {
+            showNotification(data.error || 'Failed to save', 'error');
+        }
+    } catch (error) {
+        showNotification('Error: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Save all changes
+async function saveAllChanges() {
+    const updates = Object.keys(matrixData.modifiedState).map(techId => ({
+        technician_id: parseInt(techId),
+        site_ids: matrixData.modifiedState[techId]
+    }));
+
+    if (updates.length === 0) {
+        showNotification('No changes to save', 'error');
+        return;
+    }
+
+    if (!confirm(`Save changes for ${updates.length} technician(s)?`)) {
+        return;
+    }
+
+    showLoading(true);
+
+    try {
+        const response = await fetch('/api/tools/site-matrix/bulk-update', {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({updates})
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            const results = data.results;
+            showNotification(
+                `Saved ${results.success.length} of ${results.total} technicians`,
+                results.failed.length > 0 ? 'error' : 'success'
+            );
+
+            // Update original state for successful saves
+            results.success.forEach(item => {
+                matrixData.originalState[item.technician_id] = [...matrixData.modifiedState[item.technician_id]];
+                delete matrixData.modifiedState[item.technician_id];
+
+                const row = document.querySelector(`tr[data-tech-id="${item.technician_id}"]`);
+                row.classList.remove('modified');
+            });
+
+            updateModifiedCount();
+        } else {
+            showNotification('Failed to save changes', 'error');
+        }
+    } catch (error) {
+        showNotification('Error: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Cancel all changes
+function cancelAllChanges() {
+    if (!confirm('Cancel all pending changes?')) {
+        return;
+    }
+
+    matrixData.modifiedState = {};
+    renderMatrix();
+    updateModifiedCount();
+    showNotification('Changes canceled', 'success');
+}
+
+// Search functionality
+document.getElementById('searchBox').addEventListener('input', (e) => {
+    const searchTerm = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('#tableBody tr');
+
+    rows.forEach(row => {
+        const techName = row.querySelector('.tech-name')?.textContent.toLowerCase() || '';
+        const techEmail = row.querySelector('.tech-email')?.textContent.toLowerCase() || '';
+
+        if (techName.includes(searchTerm) || techEmail.includes(searchTerm)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+
+// Filter functionality
+document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const filter = btn.dataset.filter;
+        const rows = document.querySelectorAll('#tableBody tr');
+
+        rows.forEach(row => {
+            const techId = row.dataset.techId;
+            const isModified = matrixData.modifiedState[techId] !== undefined;
+            const tech = matrixData.technicians.find(t => t.id == techId);
+
+            let show = true;
+
+            if (filter === 'active') {
+                show = tech?.status === 'ACTIVE';
+            } else if (filter === 'modified') {
+                show = isModified;
+            }
+
+            row.style.display = show ? '' : 'none';
+        });
+    });
+});
+
+// Event listeners
+document.getElementById('refreshBtn').addEventListener('click', loadMatrixData);
+document.getElementById('saveAllBtn').addEventListener('click', saveAllChanges);
+document.getElementById('saveAllChanges').addEventListener('click', saveAllChanges);
+document.getElementById('cancelAllChanges').addEventListener('click', cancelAllChanges);
+
+// Utility functions
+function showLoading(show) {
+    document.getElementById('loadingOverlay').classList.toggle('active', show);
+}
+
+function showNotification(message, type = 'success') {
+    const notification = document.getElementById('notification');
+    notification.textContent = message;
+    notification.className = `notification ${type}`;
+    notification.classList.add('show');
+
+    setTimeout(() => {
+        notification.classList.remove('show');
+    }, 3000);
+}
+
+// Initialize
+loadMatrixData();
+</script>
+{% endblock %}
