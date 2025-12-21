@@ -457,4 +457,4 @@ if __name__ == '__main__':
         os.makedirs(app.instance_path, exist_ok=True)
         init_db()
 
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    app.run(debug=True, host='172.14.200.12', port=5000)
