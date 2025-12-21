@@ -834,6 +834,8 @@
         <nav class="navbar">
             <a href="{{ url_for('index') }}" class="navbar-brand">SDP Explorer</a>
             <div class="navbar-menu">
+                <a href="{{ url_for('index') }}">API Explorer</a>
+                <a href="{{ url_for('site_matrix') }}">Site Matrix</a>
                 <span class="user-info">{{ current_user.username }}</span>
                 <a href="{{ url_for('profile') }}">Profile</a>
                 <a href="{{ url_for('logout') }}">Logout</a>
