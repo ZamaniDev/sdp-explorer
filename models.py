@@ -24,6 +24,7 @@ class User(UserMixin, db.Model):
     request_history = db.relationship('RequestHistory', backref='user', lazy='dynamic', cascade='all, delete-orphan')
     saved_queries = db.relationship('SavedQuery', backref='user', lazy='dynamic', cascade='all, delete-orphan')
     preferences = db.relationship('UserPreferences', backref='user', uselist=False, cascade='all, delete-orphan')
+    api_credentials = db.relationship('APICredential', backref='user', lazy='dynamic', cascade='all, delete-orphan')
 
     def set_password(self, password):
         """Hash and set password"""
@@ -92,3 +93,27 @@ class UserPreferences(db.Model):
 
     def __repr__(self):
         return f'<UserPreferences user_id={self.user_id}>'
+
+
+class APICredential(db.Model):
+    """Multiple API keys per user with different access levels"""
+    __tablename__ = 'api_credentials'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+
+    # Credential details
+    name = db.Column(db.String(100), nullable=False)  # e.g., "My Admin Key", "Technician Key"
+    api_key = db.Column(db.String(255), nullable=False)
+    api_base_url = db.Column(db.String(255), nullable=False)
+
+    # Access level
+    role_type = db.Column(db.String(50), nullable=False)  # 'admin', 'technician', 'requester'
+    is_active = db.Column(db.Boolean, default=True)
+
+    # Metadata
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_used = db.Column(db.DateTime, nullable=True)
+
+    def __repr__(self):
+        return f'<APICredential {self.name} ({self.role_type})>'
